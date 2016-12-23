@@ -5,8 +5,11 @@ from robobrowser import RoboBrowser
 from bs4 import BeautifulSoup
 import requests
 from robobrowser.forms.form import Form
+import pycurl
+from urllib.parse import urlencode
 
-browser = RoboBrowser(history=True)
+
+browser = RoboBrowser(history=True, parser='html.parser')
 print("enter the anime you want to download")
 inp = input()
 anime = inp.split(" ")
@@ -38,10 +41,11 @@ selec = int(input())
 #resp = browser.session.get(url, params={'value': 'cat'})
 browser.follow_link(anchors[selec-1])
 
+base_title = titles[selec-1]
 selected = titles[selec-1].split(" ")
 inter = ""
-for x in selected:
-	inter=inter+x.lower()+"-"
+for s in selected:
+	inter=inter+s.lower()+"-"
 selected = inter[0:len(inter)-1]
 print(selected)
 z = browser.parsed
@@ -63,63 +67,88 @@ url = base_url + '/load-list-episode?ep_start='+ep_start+'&ep_end='+ep_end+'&id=
 r = requests.get(url)
 soup = BeautifulSoup(r.text, 'html.parser')
 episodes = soup.find_all("a")
+print(episodes)
+no_of_episodes = len(episodes)
+print(no_of_episodes)
+print(episodes[no_of_episodes-1])
 
-#for x in range(24,-1,-1)
-link=((episodes[4])['href'])
-url = base_url+link
-url = re.sub('[\s+]', '', url)
-print(url)
-browser.open(url)
-soup = BeautifulSoup(str(browser.parsed),'html.parser')
-dl = soup.find_all("div" ,class_="download-anime")
-soup = BeautifulSoup(str(dl[0]),'html.parser')
-dl = soup.find_all("a")
-browser.follow_link(dl[0])
-soup = BeautifulSoup(str(browser.parsed),'html.parser')
-mirror_link = soup.find_all("div" ,class_="mirror_link")
-lin = []
-source = []
-for x in mirror_link:
-	sap = BeautifulSoup(str(x),'html.parser')
-	tag = str(sap.find("h6").string)
-	if(tag == "Mirror Link"):
-		sp = BeautifulSoup(str(x),'html.parser')
-		anchs = sp.find_all("a")
-		for y in anchs:
-			lin.append(y['href'])
-			source.append(y.string)
-l = len(lin)
-dl = l-1
-for x in range(l-1,-1,-1):
-	if(source[x] == "Download mp4upload"):
-		dl = x
-		break
-	elif(source[x] == "Download openload"):
-		dl = x
-		break
-	else:
-		print("Sorry no script supported download link found")
+for num in range(no_of_episodes-1,-1,-1):
+	print(num)
+	link=((episodes[num])['href'])
+	url = base_url+link
+	url = re.sub('[\s+]', '', url)
+	print(url)
+	browser.open(url)
+	soup = BeautifulSoup(str(browser.parsed),'html.parser')
+	dl = soup.find_all("div" ,class_="download-anime")
+	soup = BeautifulSoup(str(dl[0]),'html.parser')
+	dl = soup.find_all("a")
+	browser.follow_link(dl[0])
+	soup = BeautifulSoup(str(browser.parsed),'html.parser')
+	mirror_link = soup.find_all("div" ,class_="mirror_link")
+	lin = []
+	source = []
+	for x in mirror_link:
+		sap = BeautifulSoup(str(x),'html.parser')
+		tag = str(sap.find("h6").string)
+		if(tag == "Mirror Link"):
+			sp = BeautifulSoup(str(x),'html.parser')
+			anchs = sp.find_all("a")
+			for y in anchs:
+				lin.append(y['href'])
+				source.append(y.string)
+	l = len(lin)
+	dl = l-1
+	for x in range(l-1,-1,-1):
+		if(source[x] == "Download mp4upload"):
+			dl = x
+			break
+		elif(source[x] == "Download openload"):
+			dl = x
+			break
+		else:
+			print("Sorry no script supported download link found")
 
-dlselected = lin[dl]
-browser.open(dlselected)
-print(source)
+	dlselected = lin[dl]
+	browser.open(dlselected)
+	#print(source)
+	filename = base_title + str(no_of_episodes-num)+".mp4"
+	#print(filename)
+	#print(dlselected)
 
 
-if(source[dl] == "Download mp4upload"):
-	form = browser.get_forms()
-	num = 0
-	i = 0
-	for f in form:
-		if(f['op'].value=="download2"):
-			num = i
-		i+=1
-	form = form[num]
-	#print(form)
-	data = form.serialize()
-	print(data)
+	if(source[dl] == "Download mp4upload"):
+		form = browser.get_forms()
+		num = 0
+		i = 0
+		for f in form:
+			if(f['op'].value=="download2"):
+				num = i
+			i+=1
+		form = form[num]
+		data = {'op' : form['op'].value, 'id' : form['id'].value, 'rand' : form['rand'].value, 'referer' : form['referer'].value,	'method_free' : form['method_free'].value,	'method_premium' : form['method_premium'].value}
+			
+		#print(form)
+		#print(data)
+		c = pycurl.Curl()
+		c.setopt(c.URL, dlselected)
+		postfields = urlencode(data)
+		c.setopt(c.POSTFIELDS, postfields)
+		fp= open(filename, "wb")
+		c.setopt(c.WRITEDATA, fp)
+		#range metter 1 megabyte is 1048576 byte just for knowladge
+		#c.setopt(c.RANGE, '5242880-52428800') 
+		c.setopt(c.FOLLOWLOCATION, True)
+		print("starting download,happy waiting..")
+		c.perform()
+		fp.close()
+		c.close()
+	if(source[dl] == "Download openload"):
+		
+
 	#func = getattr(requests.session, form.method.lower())
-    #response = func(dlselected, **data)
-    #print(response)
+	#response = func(dlselected, **data)
+	#print(response)
 	#browser.submit_form(form)
 
 
