@@ -7,7 +7,7 @@ import requests
 from robobrowser.forms.form import Form
 import pycurl
 from urllib.parse import urlencode
-
+import dryscrape
 
 browser = RoboBrowser(history=True, parser='html.parser')
 print("enter the anime you want to download")
@@ -144,6 +144,31 @@ for num in range(no_of_episodes-1,-1,-1):
 		fp.close()
 		c.close()
 	if(source[dl] == "Download openload"):
+		dry = dryscrape.Session()
+		dry.set_attribute('auto_load__images', False)
+		dry.set_attribute('javascript_can_open_windows', False)
+		dry.visit(dlselected)
+		r = dry.body()
+		sip = BeautifulSoup(r,'html.parser')
+		downloadlinkis = sip.find('span',id='streamurl')
+		downloadlinkis = downloadlinkis.string
+		downloadlinkis = "https://openload.co/stream/"+downloadlinkis
+		c = pycurl.Curl()
+		c.setopt(c.URL, downloadlinkis)
+		fp= open(filename, "wb")
+		c.setopt(c.WRITEDATA, fp)
+		#range metter 1 megabyte is 1048576 byte just for knowladge
+		#c.setopt(c.RANGE, '5242880-52428800') 
+		c.setopt(c.FOLLOWLOCATION, True)
+		print("starting download,happy waiting..")
+		c.perform()
+		fp.close()
+		c.close(
+
+
+
+
+
 		
 
 	#func = getattr(requests.session, form.method.lower())
