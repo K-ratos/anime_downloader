@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+	#!/usr/bin/env python
 
 import re
 from robobrowser import RoboBrowser
@@ -70,9 +70,13 @@ episodes = soup.find_all("a")
 print(episodes)
 no_of_episodes = len(episodes)
 print(no_of_episodes)
-print(episodes[no_of_episodes-1])
+print('enter starting and ending episode')
+inp =input()
+inp = inp.split(' ')
+stend = [int(x.strip()) for x in inp]
+#print(episodes[no_of_episodes-1])
 
-for num in range(no_of_episodes-1,-1,-1):
+for num in range(no_of_episodes-int(stend[0]),no_of_episodes-int(stend[1])-1,-1):
 	print(num)
 	link=((episodes[num])['href'])
 	url = base_url+link
@@ -118,6 +122,7 @@ for num in range(no_of_episodes-1,-1,-1):
 
 
 	if(source[dl] == "Download mp4upload"):
+		print('Downloading from mp4upload')
 		form = browser.get_forms()
 		num = 0
 		i = 0
@@ -143,14 +148,33 @@ for num in range(no_of_episodes-1,-1,-1):
 		c.perform()
 		fp.close()
 		c.close()
+		fp= open(filename, "r")
+		try:
+			fi=fp.read()
+			sipa = BeautifulSoup(fi, 'html.parser')
+			if(sipa.find('h1').string == '404 Not Found'):
+				for x in range(l-1,-1,-1):
+					if(source[x] == "Download openload"):
+						dl = x
+						break
+				print(str(dl))
+				print('couldn;t download form mp4upload')
+			else:
+				continue
+		except UnicodeDecodeError:
+			continue
 	if(source[dl] == "Download openload"):
+		print('Downloading from openload')
+		dlselected = lin[dl]
 		dry = dryscrape.Session()
 		dry.set_attribute('auto_load__images', False)
 		dry.set_attribute('javascript_can_open_windows', False)
 		dry.visit(dlselected)
 		r = dry.body()
+		#print(r)
 		sip = BeautifulSoup(r,'html.parser')
-		downloadlinkis = sip.find('span',id='streamurl')
+		downloadlinkis = sip.find('span', id='streamurl')
+		print(downloadlinkis)
 		downloadlinkis = downloadlinkis.string
 		downloadlinkis = "https://openload.co/stream/"+downloadlinkis
 		c = pycurl.Curl()
@@ -163,7 +187,7 @@ for num in range(no_of_episodes-1,-1,-1):
 		print("starting download,happy waiting..")
 		c.perform()
 		fp.close()
-		c.close(
+		c.close()
 
 
 
